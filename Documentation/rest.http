@@ -1,2 +1,2 @@
 
-GET http://localhost:3001/amazon?q=hamid&filter=nawaz &currentPage=12 HTTP/1.1
+GET http://localhost:3001/amazon?k=gaming keyboard&s=price-desc-rank&page=2 HTTP/1.1
