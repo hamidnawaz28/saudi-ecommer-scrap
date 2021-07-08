@@ -1,2 +1,8 @@
-
+### Amazon
 GET http://localhost:3001/amazon?k=gaming keyboard&s=price-desc-rank&page=2 HTTP/1.1
+
+### Costco
+GET http://localhost:3001/costco?keyword=gaming keyboard&sortBy=price-desc-rank&currentPage=2 HTTP/1.1
+
+### Wallmart
+GET http://localhost:3001/wallmart?keyword=gaming keyboard&sortBy=price-desc-rank&currentPage=2 HTTP/1.1
