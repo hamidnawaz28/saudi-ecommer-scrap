@@ -12,7 +12,7 @@ const AMAZON = {
         let browser = "";
         try {
             browser = await puppeteer.launch({
-                headless: true,
+                headless: false,
                 args: [
                     "--no-sandbox",
                     "--disable-setuid-sandbox",
@@ -50,8 +50,9 @@ const AMAZON = {
                     let product = await page.evaluate(this.extractData);
                     console.log("extracted data=== ", product);
                     if (product) {
-                        return product;
+
                     }
+
                 } catch (err) {
                     console.log("error =>", err);
                 }
@@ -67,6 +68,7 @@ const AMAZON = {
         return "done";
     },
     findItemBySku() {
+
         let firstItem = document.querySelector(".a-link-normal.a-text-normal")
         if (firstItem) {
             return firstItem.href;
@@ -74,7 +76,10 @@ const AMAZON = {
         return false;
     },
     extractData() {
+
         var data = {};
+        debugger;
+
         // Extract Brand
         let productBrand = document.querySelector("#detailBullets_feature_div")
         if (productBrand) {

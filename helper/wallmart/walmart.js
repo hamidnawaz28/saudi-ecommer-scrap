@@ -3,14 +3,12 @@ const pluginStealth = require("puppeteer-extra-plugin-stealth");
 puppeteer.use(pluginStealth());
 
 const WALMART = {
-    async firstOne(query) {
-        let q = Object.keys(query)
-        .map((item) => `&${item}=${query[item]}`.split(" ").join("%20"))
-        .join("");
+    async firstOne(query, filter, currentPage) {
         let browser = ''
         try {
             browser = await puppeteer.launch({
-                headless: true,
+                headless: false,
+                 
                 args: [
                     "--no-sandbox",
                     "--disable-setuid-sandbox",
@@ -19,6 +17,7 @@ const WALMART = {
                     "--lang=en-US;q=0.9,en",
                 ],
             });
+           
             const page = await browser.newPage();
             page.setViewport({
                 width: 1400,
@@ -30,9 +29,12 @@ const WALMART = {
                 timeout: 0,
             }
          );
+            let q = query.split(' ').join('%20')
             let url = `https://www.walmart.com/search/?query=${q}  `
             console.log('Url--------', url);
+            
             await page.goto(
+
                 url,
                 {
                     waitUntil: "load",
@@ -43,7 +45,7 @@ const WALMART = {
                 let product = await page.evaluate(this.extractData);
                 console.log("extracted data=== ", product);
                 if (product) {
-                    return product
+
                 }
             } catch (err) {
                 console.log("error =>", err);
@@ -60,6 +62,7 @@ const WALMART = {
     },
     extractData() {
         let out = []
+        
         let allProducts= document.querySelectorAll('li.Grid-col')
         Array.from(allProducts).forEach((item) => {
             var imag = item.querySelector('.orientation-portrait img')?.src
@@ -86,4 +89,4 @@ const WALMART = {
 };
 module.exports = WALMART;
 
-// WALMART.firstOne('men boots');
+WALMART.firstOne('men boots', '', '');
