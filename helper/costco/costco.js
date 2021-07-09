@@ -6,8 +6,8 @@ puppeteer.use(pluginStealth());
 const COSTOCO = {
   async firstOne(query) {
     let q = Object.keys(query)
-    .map((item) => `&${item}=${query[item]}`.split(" ").join("+"))
-    .join("");
+      .map((item) => `&${item}=${query[item]}`.split(" ").join("+"))
+      .join("");
     let browser = "";
     try {
       browser = await puppeteer.launch({
@@ -114,4 +114,4 @@ const COSTOCO = {
 };
 module.exports = COSTOCO;
 
-COSTOCO.firstOne("shoe nike ", "item_page_views+desc", "1");
+// COSTOCO.firstOne("shoe nike ", "item_page_views+desc", "1");
