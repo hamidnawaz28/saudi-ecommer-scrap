@@ -15,7 +15,7 @@ const AMAZON = {
         headless: true,
         args: [
           "--no-sandbox",
-          "--disable-setuid-sandbox",
+          // "--disable-setuid-sandbox",
           "--ignore-certificate-errors",
           "--disable-dev-shm-usage",
           "--lang=en-US;q=0.9,en",
