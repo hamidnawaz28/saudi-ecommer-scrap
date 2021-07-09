@@ -11,7 +11,7 @@
     "puppeteer"
   ],
   "scripts": {
-    "start": "nodemon ./index.js"
+    "start": "node ./index.js"
   },
   "author": "Hamid Nawaz",
   "license": "Saudi Ecomm",

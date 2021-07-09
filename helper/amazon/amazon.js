@@ -19,7 +19,6 @@ const AMAZON = {
           "--ignore-certificate-errors",
           "--disable-dev-shm-usage",
           "--lang=en-US;q=0.9,en",
-          "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36",
         ],
       });
       const page = await browser.newPage();
