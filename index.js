@@ -14,5 +14,5 @@ var wallmart = require("./routers/wallmart/wallmart");
 app.use("/amazon", amazon);
 app.use("/costco", costco);
 app.use("/wallmart", wallmart);
-
-app.listen(3001);
+const port = process.env.PORT || 3001;
+app.listen(port);
