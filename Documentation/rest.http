@@ -1,6 +1,10 @@
 ### Amazon
 GET http://localhost:3001/amazon?k=laptop&s=price-desc-rank&page=3 HTTP/1.1
 
+### Amazon SKU
+GET http://localhost:3001/amazon/asin/B07H85QQ32 HTTP/1.1
+
+
 ### Costco
 GET http://localhost:3001/costco?keyword=gaming keyboard&sortBy=price-desc-rank&currentPage=2 HTTP/1.1
 

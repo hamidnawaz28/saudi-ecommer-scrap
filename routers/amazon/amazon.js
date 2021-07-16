@@ -7,8 +7,9 @@ router.get("/", async function (req, res) {
   const q = req.query;
   res.status(200).send(await amzScrp.firstOne(q));
 });
-router.get("/:id", async function (req, res) {
-  const sku = req.params.id;
-  res.status(200).send(await amzScrpSku.firstOne(sku));
+router.get("/asin/:id", async function (req, res) {
+  const asin = req.params.id;
+  console.log("asin----------->",asin);
+  res.status(200).send(await amzScrpSku.firstOne(asin));
 });
 module.exports = router;

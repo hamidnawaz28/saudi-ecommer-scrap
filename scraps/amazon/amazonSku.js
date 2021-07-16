@@ -7,18 +7,20 @@ const sleep = (duration) =>
 const msleep = 2000; // sleeping time
 
 const AMAZON = {
-  async firstOne(id, sku, brand) {
-    sku = sku.trim();
+  async firstOne(sku) {
+
     let browser = "";
     try {
       browser = await puppeteer.launch({
-        headless: false,
+        headless: true,
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
           "--ignore-certificate-errors",
           "--disable-dev-shm-usage",
           "--lang=en-US;q=0.9,en",
+          "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36",
+
         ],
       });
       const page = await browser.newPage();
@@ -52,6 +54,7 @@ const AMAZON = {
           let product = await page.evaluate(this.extractData);
           console.log("extracted data=== ", product);
           if (product) {
+            return product
           }
         } catch (err) {
           console.log("error =>", err);
@@ -165,6 +168,14 @@ const AMAZON = {
 
     // Supplier
     data["suplier"] = "Amazon";
+    // 
+    let prime = document.querySelector("._multi-card-creative-desktop_DesktopGridColumn_gridColumn__2Jfab > div > a")?.getAttribute("aria-label").includes("Eligible for Prime");
+    if(prime){
+        data["Prime"]=true;
+      }
+      else{
+        data["Prime"]=false;
+      }
 
     return data;
   },

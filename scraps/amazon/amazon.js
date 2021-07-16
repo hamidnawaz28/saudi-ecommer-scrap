@@ -19,6 +19,7 @@ const AMAZON = {
           "--ignore-certificate-errors",
           "--disable-dev-shm-usage",
           "--lang=en-US;q=0.9,en",
+          "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36",
         ],
       });
       const page = await browser.newPage();
@@ -53,8 +54,9 @@ const AMAZON = {
   },
   extractData() {
     let out = [];
+    let brands = Array.from(document.querySelectorAll("[aria-labelledby=p_89-title] > li")).map(item=>item.getAttribute('aria-label')).filter(item=>item)
     Array.from(
-      document.querySelectorAll(".a-section.a-spacing-medium")
+      document.querySelectorAll("[data-component-type=s-search-result]")
     ).forEach((item) => {
       var imag = item.querySelector("img")?.src;
       let title = item.querySelector(".a-link-normal.a-text-normal")?.innerText;
@@ -63,22 +65,36 @@ const AMAZON = {
       let price = item.querySelector(".a-price span.a-offscreen")?.innerText;
       let link = item.querySelector(
         "a-size-base.a-link-normal.a-text-normal"
-      )?.innerText;
-
+      )?.innerText;       
+      let sku = item.getAttribute("data-asin");
+      let isPrime = item.innerText.includes("Eligible for Prime") ? true : false
       let ob = {
-        imageUrl: imag,
+        image: imag,
         title,
         price,
-        rating: rating?.replace(" out of 5 stars", ""),
-        // ratings: totalRating,
+        stars: rating?.replace(" out of 5 stars", ""),
+        num_reviews: totalRating,
         link,
+        asin: sku,
+        prime:isPrime,
+        
       };
+      
       out.push(ob);
       ob = {};
     });
-    out = out.filter((item) => item.imageUrl && item.title);
-    return out;
+    out = out.filter((item) => item.image && item.title && item.price);
+    let results = {
+      brands,
+      results : out
+    }
+    return results;
   },
+
+    // let allBrands = Array.from(
+    //   document.querySelectorAll("[aria-labelledby=p_89-title] > li")
+    // ).forEach((item) => {brands.getAttribute("aria-label")});
+  
 };
 module.exports = AMAZON;
 
