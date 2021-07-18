@@ -4,7 +4,6 @@ puppeteer.use(pluginStealth());
 
 const WALMART = {
   async firstOne(sku) {
-    sku = sku.trim();
     let browser = "";
     try {
       browser = await puppeteer.launch({
@@ -22,18 +21,18 @@ const WALMART = {
       page.setViewport({
         width: 1400,
         height: 1050,
-        
       });
-      await page.goto("https://www.walmart.com/ ",
-            {
-                waitUntil: "load",
-                timeout: 0,
-            });
-      
+
+      await page.goto("https://www.walmart.com/",
+        {
+          waitUntil: "load",
+          timeout: 0,
+        });
+
       await page.goto(
         "https://www.walmart.com/search/?query=" +
-          sku 
-          ,
+        sku
+        ,
         {
           waitUntil: "load",
           timeout: 0,
@@ -66,7 +65,7 @@ const WALMART = {
     return "done";
   },
   findItemBySku() {
-   
+
     let firstItem = document.querySelector(
       ".arrange-fill a"
     );
@@ -74,132 +73,109 @@ const WALMART = {
       return firstItem.href;
     }
     return false;
-   
+
   },
   extractData() {
     // Set empty data object
-    
+
     var data = {};
- 
+    
     // Set Brand
-    let productBrand =document.querySelector('.hf-Bot span');
-    if(productBrand){
-        data["brand"] = productBrand.innerText;
-    }
-    
-    // Set title
-    let productTitle=document.querySelector('[property="og:title"]');
-    
-    if (productTitle) {
-      data["title"] = productTitle.getAttribute("content")
-      .replace(" - Walmart.com","")
-      .trim();
+    let productBrand = document.querySelector('.hf-Bot span');
+    if (productBrand) {
+      data["brand"] = productBrand.innerText;
     }
 
-    // Set Size System
-    data["size_system"] = "US";
+    // Set title
+    let productTitle = document.querySelector('[property="og:title"]');
+
+    if (productTitle) {
+      data["title"] = productTitle.getAttribute("content")
+        .replace(" - Walmart.com", "")
+        .trim();
+    }
 
     // Set Size
     data["sizes"] = [];
-  let productSize= document.querySelectorAll('.cont__content:not(.not-available-variant-label)');
-   
-  if (productSize) {
-        data["sizes"] = Array.from(productSize).map(a=>a.innerText)
-      }
+    let productSize = document.querySelectorAll('.cont__content:not(.not-available-variant-label)');
+    if (productSize) {
+      data["sizes"] = Array.from(productSize).map(a => a.innerText)
+    }
 
     // Set category
     data["category"] = [];
-   
-  let productCat= document.querySelectorAll('.breadcrumb');
-    
-  if (productCat) {
-        data["category"] = Array.from(productCat).map(a=>a.innerText.replace("/",""))
-      }
+
+    let productCat = document.querySelectorAll('.breadcrumb');
+    if (productCat) {
+      data["category"] = Array.from(productCat).map(a => a.innerText.replace("/", ""))
+    }
 
     // Set Price
     data["main_price"] = "0";
     data["offered-price"] = "0";
-    
-    let mainPrice=  document.querySelector('.price.display-inline-block.xxs-margin-left.price--strikethrough>.visuallyhidden');
-    let offeredPrice= document.querySelectorAll('.price.display-inline-block.arrange-fit.price>.visuallyhidden');
-
-    if (offeredPrice) {
-      data["offered-price"] = Array.from( offeredPrice).map(a=>a.innerText).splice(1,2)
+    let price = document.querySelector('.price-old .visuallyhidden').innerText.toLowerCase()
+    let ofPrice = document.querySelector('.prod-PriceHero .visuallyhidden').innerText
+    if (price.includes('was')) {
+      data["main_price"] = price.replace('was ', '');
+      data["offered-price"] = ofPrice
     }
-    
-    if (mainPrice) {
-      data["main_price"] = mainPrice.innerText
-      .replace("WAS","")
-      .trim();
+    else {
+      data["offered-price"] = ofPrice
     }
-
 
     data["url"] = document.URL;
-    
+
     // Set Product images
     data["images"] = [];
-    let productImages= document.querySelectorAll('.slider-frame ul')[0].querySelectorAll('li img')
-    
+    let productImages = document.querySelectorAll('.slider-frame ul')[0].querySelectorAll('li img')
     if (productImages) {
       data["images"] = Array.from(productImages).map((a) => a.src);
-      }
-  
-    // Get Rating
-    data["ratings"]=""
-    let productRating= document.querySelector('[itemprop="ratingValue"]');
-    
-    if(productRating){ data["ratings"]= productRating.innerText
+    }
 
+    // Get Rating
+    data["stars"] = ""
+    let productRating = document.querySelector('[itemprop="ratingValue"]');
+    if (productRating) {
+      data["stars"] = productRating.innerText
     }
 
     // Get Total Rating
-    data["total-rating"]="";
-    let totalRating= document.querySelector('.stars-reviews-count-node')
-   
-    if(totalRating){ data["total-rating"]= totalRating.innerText
-
+    data["num_reviews"] = "";
+    let totalRating = document.querySelector('.stars-reviews-count-node')
+    if (totalRating) {
+      data["num_reviews"] = totalRating.innerText.replace(' ratings','')
     }
+
     // Get Description
     if (document.querySelector("[property='og:description']")) {
       data["description"] = document
         .querySelector("[property='og:description']")
         .getAttribute("content")
         .trim();
-    }va
-    
-    // Set color
-    
-    data["color"] = " ";
-    let productColor=document.querySelectorAll('.variants__list')[0].querySelectorAll('label');
-    let actualColor=document.querySelectorAll('.varslabel span')[1];
-
-    if(productColor.length>1){
-      data["color"] = "Multicolor";
-    }else{
-      data["color"] = actualColor.innerText;
     }
-    
-    // Set Dimension
-    data["dimensions"] = "";
-    
+
+    // Set color 
+    data["color"] = " ";
+    let colObj = document.querySelector('.varslabel__content')
+    if(colObj) data["color"] = colObj.innerText
+
     // Set Supplier
     data["supplier"] = "Walmart";
     
     // Set Currency
-    data["currency"] = "EUR";
-    let currencySelec = document.querySelector('[class="price-currency"]');
-    if (currencySelec) {
-      data["currency"] = currencySelec.getAttribute("content").trim();
+    let currObj = document.querySelector('.price-currency')
+    data["currency"] = ''
+    if(currObj){
+      data["currency"] = currObj?.getAttribute('content')
     }
-   
     // Return scraped data
     return data;
   },
 };
 module.exports = WALMART;
 
-// WALMART.firstOne('', '276150604', 'test');
+// WALMART.firstOne(595043117); //keybord
 
-// WALMART.firstOne('', '611272442', 'test');
+// WALMART.firstOne('270570931'); //bachi
 
 // WALMART.firstOne('', '276150604', 'test');

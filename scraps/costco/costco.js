@@ -26,7 +26,11 @@ const COSTOCO = {
         width: 1400,
         height: 1050,
       });
-      let url = `https://www.costco.com/CatalogSearch?&dept=All&pageSize=24&${q}`;
+      await page.goto("https://www.costco.com/ ", {
+        waitUntil: "load",
+        timeout: 0,
+      });
+      let url = `https://www.costco.com/CatalogSearch?pageSize=24${q}`;
       console.log("Url--------", url);
       await page.goto(url, {
         waitUntil: "load",
@@ -37,6 +41,8 @@ const COSTOCO = {
         let product = await page.evaluate(this.extractData);
         console.log("extracted data=== ", product);
         if (product) {
+          await browser.close()
+          return product
         }
       } catch (err) {
         console.log("error =>", err);
@@ -96,21 +102,29 @@ const COSTOCO = {
         .querySelector(".price")
         ?.innerText?.replace(/[\t \n ]+/g, "");
       let link = item.querySelector(".description>a")?.href;
+      let asin = item?.getAttribute('itemid')
       let ob = {
-        imageUrl,
+        asin,
+        image: imageUrl,
         title,
         price,
-        rating: rating?.replace(" out of 5 stars", ""),
-        ratings: totalRating,
+        stars: rating?.replace(" out of 5 stars", ""),
+        num_reviews: totalRating,
         link,
       };
       out.push(ob);
       ob = {};
     });
-    out = out.filter((item) => item.imageUrl && item.title);
+    out = out.filter((item) => item.image && item.title && item.price);
+    let brandDom = Array.from(document.querySelectorAll('.panel.panel-default')).filter(item => item.querySelector('.panel-title').innerText.includes('Brand'))[0]
+    let brands = Array.from(brandDom.querySelectorAll("div:nth-child(2) > div > span label > span:nth-child(1)")).map(item => item.innerText)
+    let output = {
+      brands,
+      results: out
+    }
     // Return scraped data
 
-    return out;
+    return output;
   },
 };
 module.exports = COSTOCO;

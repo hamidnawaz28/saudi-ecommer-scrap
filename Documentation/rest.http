@@ -1,12 +1,20 @@
 ### Amazon
-GET http://localhost:3001/amazon?k=laptop&s=price-desc-rank&page=3 HTTP/1.1
+GET http://localhost:3002/amazon?k=laptop&s=price-desc-rank&page=3 HTTP/1.1
 
-### Amazon SKU
-GET http://localhost:3001/amazon/asin/B07H85QQ32 HTTP/1.1
+### Amazon ASIN
+GET http://localhost:3002/amazon/asin/B07H85QQ32 HTTP/1.1
 
 
 ### Costco
-GET http://localhost:3001/costco?keyword=gaming keyboard&sortBy=price-desc-rank&currentPage=2 HTTP/1.1
+GET http://localhost:3002/costco?keyword=laptop+aacc&sortBy=price-desc-rank&currentPage=2 HTTP/1.1
+
+### Costco ASIN
+GET http://localhost:3002/costco/asin/1430643
+
 
 ### Wallmart
-GET http://localhost:3001/wallmart?keyword=gaming keyboard&sortBy=price-desc-rank&currentPage=2 HTTP/1.1
+GET http://localhost:3002/walmart?query=gaming keyboard&sortBy=price-desc-rank&currentPage=2 HTTP/1.1
+ 
+
+### Wallmart id
+GET http://localhost:3002/walmart/asin/270570931 HTTP/1.1

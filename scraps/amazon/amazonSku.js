@@ -79,7 +79,6 @@ const AMAZON = {
   },
   extractData() {
     var data = {};
-    debugger;
 
     // Extract Brand
     let productBrand = document.querySelector("#detailBullets_feature_div");
@@ -90,6 +89,7 @@ const AMAZON = {
         .split(":")[1]
         .replace(/[" " ]+/g, "");
     }
+    
     // Extract title
     let productTitle = document.querySelector("#productTitle");
     if (productTitle) {
@@ -116,6 +116,7 @@ const AMAZON = {
       let extractedImg = Array.from(productImg).map((item) => item.src);
       data["images"].push(extractedImg);
     }
+    
     // Extract Product Sizes Available
     data["availSizes"] = [];
     let productSize = document.querySelectorAll(
@@ -133,6 +134,7 @@ const AMAZON = {
       let rating = prodRating.innerText.replace(" out of 5 stars", "");
       data["rating"] = rating;
     }
+   
     // Extract price
     data["offerPrice"] = [];
     let prodPrice = document.querySelector("#priceblock_ourprice");
@@ -152,6 +154,7 @@ const AMAZON = {
         data["mainPrice"] = "";
       }
     }
+    
     // Extract color
     data["color"] = [];
     let prodColor = document.querySelector(
@@ -168,7 +171,8 @@ const AMAZON = {
 
     // Supplier
     data["suplier"] = "Amazon";
-    // 
+    
+    // Check if prime
     let prime = document.querySelector("._multi-card-creative-desktop_DesktopGridColumn_gridColumn__2Jfab > div > a")?.getAttribute("aria-label").includes("Eligible for Prime");
     if(prime){
         data["Prime"]=true;

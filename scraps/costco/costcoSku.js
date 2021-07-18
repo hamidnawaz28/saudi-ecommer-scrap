@@ -26,19 +26,23 @@ const COSTOCO = {
         height: 1050,
       });
 
-      await page.goto("https://www.costco.com/", {
+      await page.goto(`https://www.costco.com/CatalogSearch?keyword=${sku}`, {
         waitUntil: "load",
         timeout: 0,
       });
 
-      await page.type("#search-field", sku, { delay: 40 });
-      await page.keyboard.press("Enter");
+      // await page.type("#search-field", sku, { delay: 40 });
+      // await page.keyboard.press("Enter");
 
       try {
         await page.reload({ waitUntil: "load", timeout: 0 });
+         
+        await page.waitForSelector("[itemprop=ratingValue]", { timeout: 30000 });
+        await page.waitForSelector("[itemprop=reviewCount]", { timeout: 30000 });
         let product = await page.evaluate(this.extractData);
         console.log("extracted data=== ", product);
         if (product) {
+          await browser.close()
           return product;
         }
       } catch (err) {
@@ -80,19 +84,17 @@ const COSTOCO = {
 
     // Extract Product images
     data["images"] = [];
-    let productImg = document.querySelectorAll("#theViews div div a img");
+    let productImg = document.querySelectorAll('[property="og:image"]');
     if (productImg) {
-      let extractedImg = Array.from(productImg).map((item) => item.src);
-      data["images"].push(extractedImg);
+      data["images"] = Array.from(productImg).map(item=>item.getAttribute('content'));
     }
     // Extract Product Sizes Available
-    data["availSizes"] = [];
+    data["sizes"] = [];
     let productSize = document.querySelectorAll(
       "#swatches-productOption01 div fieldset span span"
     );
     if (productSize) {
-      let extractedSize = Array.from(productSize).map((item) => item.innerText);
-      data["availSizes"].push(extractedSize);
+      data["sizes"] = Array.from(productSize).map((item) => item.innerText);
     }
 
     // Extract price
@@ -111,6 +113,10 @@ const COSTOCO = {
       let extractedCurrency = proCurrency.getAttribute("content");
       data["currency"] = extractedCurrency;
     }
+    // Categories 
+    data['category'] = []
+    let catObj = document.querySelectorAll('.crumbs li [itemprop=name]')
+    if(catObj) data['category'] = Array.from(catObj).map(item=>item.innerText).map(item=>item.replace(/Go to\s+↵?/g, ""))
     // Extract color
     data["color"] = [];
     let prodColor = document.querySelector(".product-info-description ul");
@@ -121,19 +127,25 @@ const COSTOCO = {
       } else {
         data["color"] = extractedColor?.split("Color:")[1]?.split("\n")[0];
       }
-      // Extract rating
-      data["rating"] = [];
-      let prodRating = document.querySelector('[itemprop="ratingValue"]');
-      if (prodRating) {
-        let rating = prodRating.innerText;
-        data["rating"] = rating;
-      }
     }
-
+    // Extract rating
+    data["stars"] = '';
+    let prodRating = document.querySelector('[itemprop=ratingValue]');
+    if (prodRating) {
+      let rating = prodRating.innerText;
+      data["stars"] = rating;
+    }
+    
+    // Num Reviews 
+    data["num_reviews"] = '';
+    let numRevObj = document.querySelector('[itemprop=reviewCount]');
+    if (numRevObj) {
+      data["num_reviews"] = numRevObj.innerText;
+    }
     return data;
   },
 };
 module.exports = COSTOCO;
 
-// COSTOCO.firstOne("", "1444292", "test");
+COSTOCO.firstOne("1430643");
 // COSTOCO.firstOne("", "1371082", "test");
