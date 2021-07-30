@@ -3,7 +3,7 @@ const puppeteer = require("puppeteer-extra");
 const pluginStealth = require("puppeteer-extra-plugin-stealth");
 puppeteer.use(pluginStealth());
 const sleep = (duration) =>
-  new Promise((resolve) => setTimeout(resolve, duration));
+new Promise((resolve) => setTimeout(resolve, duration));
 const msleep = 2000; // sleeping time
 
 const AMAZON = {
@@ -28,12 +28,11 @@ const AMAZON = {
         width: 1400,
         height: 1050,
       });
-
+  
       await page.goto("https://www.amazon.com/", {
         waitUntil: "load",
         timeout: 0,
       });
-
       await page.type("#twotabsearchtextbox", sku, { delay: 40 });
       await page.keyboard.press("Enter");
       await sleep(msleep);
@@ -83,7 +82,7 @@ const AMAZON = {
     // Extract Brand
     let productBrand = document.querySelector("#detailBullets_feature_div");
     if (productBrand) {
-      data["brand"] = productBrand.innerText
+      data["brand_name"] = productBrand.innerText
         .split("Manufacturer")[1]
         .replace("\n", ":")
         .split(":")[1]
@@ -95,9 +94,15 @@ const AMAZON = {
     if (productTitle) {
       data["title"] = productTitle.innerText.trim();
     }
-
+   
+    //Extract Category
+    let prodCategory= Array.from(document.querySelectorAll("#wayfinding-breadcrumbs_feature_div li"))
+    if(prodCategory){
+      data["category"]=prodCategory.map(item=>item.innerText).filter(item=>item!="›")
+    }
+    
     // Extract description
-    data["description"];
+    data["description"]='';
     let productDescription = document.querySelector("#productDescription >p");
     if (productDescription) {
       try {
@@ -108,14 +113,15 @@ const AMAZON = {
     }
 
     // Extract Product images
-    data["images"] = [];
-    let productImg = document.querySelectorAll(
-      ".image.item.maintain-height img"
-    );
+    data["main_image"] = [];
+    let productImg = Array.from(document.querySelectorAll(".a-unordered-list.a-nostyle.a-horizontal.list.maintain-height img"))
     if (productImg) {
-      let extractedImg = Array.from(productImg).map((item) => item.src);
-      data["images"].push(extractedImg);
+      let extractedImg = productImg.map(item=>item.src);
+      data["main_image"].push(extractedImg);
     }
+
+    // data["all_images"]=''
+    // let AllImg =
     
     // Extract Product Sizes Available
     data["availSizes"] = [];
@@ -128,11 +134,11 @@ const AMAZON = {
     }
 
     // Extract rating
-    data["rating"] = [];
+    data["stars"] = [];
     let prodRating = document.querySelector(".a-icon-alt");
     if (prodRating) {
       let rating = prodRating.innerText.replace(" out of 5 stars", "");
-      data["rating"] = rating;
+      data["stars"] = rating;
     }
    
     // Extract price
@@ -169,8 +175,8 @@ const AMAZON = {
       }
     }
 
-    // Supplier
-    data["suplier"] = "Amazon";
+    // Retailer
+    data["retailer"] = "Amazon";
     
     // Check if prime
     let prime = document.querySelector("._multi-card-creative-desktop_DesktopGridColumn_gridColumn__2Jfab > div > a")?.getAttribute("aria-label").includes("Eligible for Prime");
@@ -181,11 +187,31 @@ const AMAZON = {
         data["Prime"]=false;
       }
 
+     // Feature Bullets
+     let featureB = Array.from(document.querySelectorAll("#feature-bullets span "))
+     if(featureB){
+      data["FeatureBullets"]=featureB.map(item=>item.innerText)
+     }
+
+     // Package Dimensions
+     let PackgDimenstion = document.querySelector("#detailBulletsWrapper_feature_div")
+
+     if(PackgDimenstion){
+         data["PackageDimention"]=PackgDimenstion?.innerText;
+       }
+       else{
+         data["PackageDimention"]='';
+       }
+
+      //Variants...
+
+
     return data;
   },
 };
 module.exports = AMAZON;
 
-// AMAZON.firstOne('', 'B07H85QQ32', 'test');
-// AMAZON.firstOne('', 'B07H2V5YLH', 'test');
+AMAZON.firstOne('B07T3P4ZB4');
+// AMAZON.firstOne('B08X75NTSX');
+// AMAZON.firstOne('B0963R7SJN');
 // AMAZON.firstOne('', 'B07HRC68QF', 'test');
