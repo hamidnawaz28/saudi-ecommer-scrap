@@ -135,8 +135,9 @@ const AMAZON = {
       ".a-dropdown-item.dropdownAvailable"
     );
     if (productSize) {
-      let extractedSize = Array.from(productSize).map((item) => item.innerText);
-      data["availSizes"].push(extractedSize);
+      data["availSizes"] = Array.from(productSize).map(
+        (item) => item.innerText
+      );
     }
 
     // Extract rating
@@ -209,7 +210,7 @@ const AMAZON = {
       document.querySelectorAll("#feature-bullets span ")
     );
     if (featureB) {
-      data["FeatureBullets"] = featureB.map((item) => item.innerText);
+      data["feature_bullets"] = featureB.map((item) => item.innerText);
     }
 
     // Package Dimensions
@@ -218,9 +219,9 @@ const AMAZON = {
     );
 
     if (PackgDimenstion) {
-      data["PackageDimention"] = PackgDimenstion?.innerText;
+      data["details"] = PackgDimenstion?.innerText;
     } else {
-      data["PackageDimention"] = "";
+      data["details"] = "";
     }
 
     // Measurements
@@ -238,23 +239,23 @@ const AMAZON = {
     data["weight"] = weight?.match(/[0-9.]+/)?.[0];
     data["weightUnit"] = weight?.match(/[a-zA-Z]+/)?.[0];
 
-    //Variants...
+    // Variants...
     let varientData = Array.from(document.querySelectorAll("[type]")).filter(
-      (item) => item.innerText.includes("twister-js-init-dpx-data")
-    )[0].innerText;
+      (item) => item?.innerText?.includes("twister-js-init-dpx-data")
+    )?.[0]?.innerText;
     let varients = JSON.parse(
       varientData
-        .match(
+        ?.match(
           /"dimensionValuesDisplayData"\s+:\s{["0-9A-Za-z/\[/\]:,\s.]+}/
-        )[0]
-        .replace(/"dimensionValuesDisplayData"\s+:\s/, "")
+        )?.[0]
+        ?.replace(/"dimensionValuesDisplayData"\s+:\s/, "")
     );
-    data["all_variants"] = Object.keys(varients).map((item) => {
+    data["all_variants"] = Object.keys(varients)?.map((item) => {
       return {
         product_id: item,
         variant_specifics: [
-          { dimension: "Size", value: varients[item][0] },
-          { dimension: "Color", value: varients[item][1] },
+          { dimension: "Size", value: varients?.[item]?.[0] },
+          { dimension: "Color", value: varients?.[item]?.[1] },
         ],
       };
     });
