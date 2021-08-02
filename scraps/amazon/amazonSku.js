@@ -98,7 +98,7 @@ const AMAZON = {
       document.querySelectorAll("#wayfinding-breadcrumbs_feature_div li")
     );
     if (prodCategory) {
-      data["category"] = prodCategory
+      data["categories"] = prodCategory
         .map((item) => item.innerText)
         .filter((item) => item != "›");
     }
