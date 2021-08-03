@@ -259,6 +259,22 @@ const AMAZON = {
         ],
       };
     });
+    // All images
+    var s = Array.from(document?.querySelectorAll("[type]")).filter((item) =>
+      item?.innerText?.includes("ImageBlockBTF")
+    )?.[0]?.innerText;
+    let ob = s
+      ?.match(
+        /jQuery.parseJSON[\s\S.,-_:;a-zA-Z0-9\"]*?(?=data\[\"alwaysIncludeVideo\"\])/
+      )?.[0]
+      ?.replace("jQuery.parseJSON(", "")
+      ?.replaceAll("'", "")
+      ?.replaceAll("\n", "")
+      ?.replaceAll("\\", "")
+      ?.replaceAll(");", "");
+    data["images"] = JSON.parse(ob)?.colorImages[
+      "Pink Team Gold Black 700"
+    ]?.map((item) => item?.large);
     return data;
   },
 };
