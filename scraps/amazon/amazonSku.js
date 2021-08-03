@@ -115,16 +115,9 @@ const AMAZON = {
     }
 
     // Extract Product images
-    data["main_image"] = [];
-    let productImg = Array.from(
-      document.querySelectorAll(
-        ".a-unordered-list.a-nostyle.a-horizontal.list.maintain-height img"
-      )
-    );
-    if (productImg) {
-      let extractedImg = productImg.map((item) => item.src);
-      data["main_image"].push(extractedImg);
-    }
+    data["main_image"] = document
+      .querySelector("[data-action=main-image-click] img")
+      ?.getAttribute("src");
 
     // data["all_images"]=''
     // let AllImg =
@@ -200,9 +193,9 @@ const AMAZON = {
       ?.getAttribute("aria-label")
       .includes("Eligible for Prime");
     if (prime) {
-      data["Prime"] = true;
+      data["prime"] = true;
     } else {
-      data["Prime"] = false;
+      data["prime"] = false;
     }
 
     // Feature Bullets
