@@ -1,6 +1,10 @@
 "use strict";
 const puppeteer = require("puppeteer-extra");
 const pluginStealth = require("puppeteer-extra-plugin-stealth");
+var htmlparser = require("htmlparser2");
+const randomUA = require("modern-random-ua");
+const dJSON = require("dirty-json");
+const getJson = (data) => JSON.parse(dJSON.parse(data));
 puppeteer.use(pluginStealth());
 const sleep = (duration) =>
   new Promise((resolve) => setTimeout(resolve, duration));
@@ -18,7 +22,8 @@ const AMAZON = {
           "--ignore-certificate-errors",
           "--disable-dev-shm-usage",
           "--lang=en-US;q=0.9,en",
-          "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36",
+          randomUA.generate(),
+          // "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36",
         ],
       });
       const page = await browser.newPage();
@@ -31,9 +36,12 @@ const AMAZON = {
         waitUntil: "load",
         timeout: 0,
       });
-      await page.type("#twotabsearchtextbox", sku, { delay: 40 });
+
+      await page.type("#twotabsearchtextbox", sku, { delay: 1 });
       await page.keyboard.press("Enter");
-      await sleep(msleep);
+      await page.waitForSelector(".a-link-normal.a-text-normal", {
+        timeout: 5000000,
+      });
       let foundItem = await page.evaluate(this.findItemBySku);
       if (foundItem) {
         try {
@@ -48,16 +56,44 @@ const AMAZON = {
           let btnClick2 = await page.$(".a-button-text.a-declarative");
           await btnClick2.click();
           await sleep(500);
-          let product = await page.evaluate(this.extractData);
+          let images = [];
+          let varients = [];
+          try {
+            let imagesData = await page.evaluate(this.getImagesData);
+            images = getJson(imagesData)?.colorImages[
+              "Pink Team Gold Black 700"
+            ]?.map((item) => item?.large);
+          } catch {
+            images = [];
+          }
+
+          try {
+            let varientsData = await page.evaluate(this.getVarientsData);
+            let varientsDataObj =
+              JSON.parse(varientsData).dimensionValuesDisplayData;
+            varients = Object.keys(varientsDataObj)?.map((item) => {
+              return {
+                product_id: item,
+                variant_specifics: [
+                  { dimension: "Size", value: varientsDataObj?.[item]?.[0] },
+                  { dimension: "Color", value: varientsDataObj?.[item]?.[1] },
+                ],
+              };
+            });
+          } catch {
+            varients = [];
+          }
+          let product = await page.evaluate(this.extractData, images, varients);
           console.log("extracted data=== ", product);
           if (product) {
+            await browser.close();
             return product;
           }
         } catch (err) {
           console.log("error =>", err);
         }
         await browser.close();
-        return "done";
+        return "Some Error";
       }
     } catch (err) {
       console.log("main try error", err);
@@ -67,6 +103,30 @@ const AMAZON = {
     }
     return "done";
   },
+  getImagesData() {
+    var s = Array.from(document?.querySelectorAll("[type]")).filter((item) =>
+      item?.innerText?.includes("ImageBlockBTF")
+    )?.[0]?.innerText;
+    let ob = s
+      ?.match(
+        /jQuery.parseJSON[\s\S.,-_:;a-zA-Z0-9\"]*?(?=data\[\"alwaysIncludeVideo\"\])/
+      )?.[0]
+      ?.replace("jQuery.parseJSON(", "")
+      ?.replace(");", "");
+    return ob;
+  },
+  getVarientsData() {
+    var s = Array.from(document?.querySelectorAll("[type]")).filter((item) =>
+      item?.innerText?.includes("twister-js-init-dpx-data")
+    )?.[0]?.innerText;
+    let ob = s
+      ?.match(
+        /var\s?dataToReturn\s?=[\s\S.,-_:;a-zA-Z0-9\"]*?(?=return\s?dataToReturn)/
+      )?.[0]
+      ?.replace(/var\s?dataToReturn\s?=\s?/, "")
+      ?.replace(/\;/g, "");
+    return ob;
+  },
   findItemBySku() {
     let firstItem = document.querySelector(".a-link-normal.a-text-normal");
     if (firstItem) {
@@ -74,9 +134,14 @@ const AMAZON = {
     }
     return false;
   },
-  extractData() {
-    var data = {};
 
+  extractData(images, varients) {
+    var data = {};
+    data["images"] = images;
+    data["all_variants"] = varients;
+    var s = Array.from(document?.querySelectorAll("[type]")).filter((item) =>
+      item?.innerText?.includes("ImageBlockBTF")
+    )?.[0];
     // Extract Brand
     let productBrand = document.querySelector("#detailBullets_feature_div");
     if (productBrand) {
@@ -232,48 +297,10 @@ const AMAZON = {
     data["weight"] = weight?.match(/[0-9.]+/)?.[0];
     data["weightUnit"] = weight?.match(/[a-zA-Z]+/)?.[0];
 
-    // Variants...
-    let varientData = Array.from(document.querySelectorAll("[type]")).filter(
-      (item) => item?.innerText?.includes("twister-js-init-dpx-data")
-    )?.[0]?.innerText;
-    let varients = JSON.parse(
-      varientData
-        ?.match(
-          /"dimensionValuesDisplayData"\s+:\s{["0-9A-Za-z/\[/\]:,\s.]+}/
-        )?.[0]
-        ?.replace(/"dimensionValuesDisplayData"\s+:\s/, "")
-    );
-    data["all_variants"] = Object.keys(varients)?.map((item) => {
-      return {
-        product_id: item,
-        variant_specifics: [
-          { dimension: "Size", value: varients?.[item]?.[0] },
-          { dimension: "Color", value: varients?.[item]?.[1] },
-        ],
-      };
-    });
-    // All images
-    var s = Array.from(document?.querySelectorAll("[type]")).filter((item) =>
-      item?.innerText?.includes("ImageBlockBTF")
-    )?.[0]?.innerText;
-    let ob = s
-      ?.match(
-        /jQuery.parseJSON[\s\S.,-_:;a-zA-Z0-9\"]*?(?=data\[\"alwaysIncludeVideo\"\])/
-      )?.[0]
-      ?.replace("jQuery.parseJSON(", "")
-      ?.replaceAll("'", "")
-      ?.replaceAll("\n", "")
-      ?.replaceAll("\\", "")
-      ?.replaceAll(");", "");
-    data["images"] = JSON.parse(ob)?.colorImages[
-      "Pink Team Gold Black 700"
-    ]?.map((item) => item?.large);
     return data;
   },
 };
 module.exports = AMAZON;
 
-AMAZON.firstOne("B07T3P4ZB4");
-// AMAZON.firstOne('B08X75NTSX');
-// AMAZON.firstOne('B0963R7SJN');
-// AMAZON.firstOne('', 'B07HRC68QF', 'test');
+// AMAZON.firstOne("B07T3P4ZB4");
+// AMAZON.firstOne("B085T3PGGR");

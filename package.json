@@ -22,8 +22,10 @@
   "dependencies": {
     "cheerio": "^1.0.0-rc.10",
     "cors": "^2.8.5",
+    "dirty-json": "^0.9.2",
     "express": "^4.17.1",
     "htmlparser2": "^6.1.0",
+    "modern-random-ua": "^1.0.3",
     "nodemon": "^2.0.9",
     "puppeteer": "^2.1.1",
     "puppeteer-extra": "^2.1.6",
