@@ -151,7 +151,10 @@ const AMAZON = {
     var data = {};
     data["images"] = images;
     data["all_variants"] = varients;
-    data["asin"] = asin;
+    data["product_id"] = asin;
+    data["site"] = "www.amazon.com";
+    data["url"] = window?.location?.href;
+    data["specs "] = "revisit"; //key-value pairs
     // Extract Brand
     let productBrand = document.querySelector("#detailBullets_feature_div");
     if (productBrand) {
@@ -192,7 +195,7 @@ const AMAZON = {
       document.querySelectorAll("#wayfinding-breadcrumbs_feature_div li")
     );
     if (prodCategory) {
-      data["categories"] = prodCategory
+      data["category"] = prodCategory
         ?.map((item) => item?.innerText)
         ?.filter((item) => item != "›");
     }
@@ -237,13 +240,13 @@ const AMAZON = {
     }
 
     // Extract price
-    data["offered_price"] = [];
+    data["offered_price"] = "";
     let prodPrice = document.querySelector("#priceblock_ourprice");
     if (prodPrice) {
       let extractedPrice = prodPrice?.innerText;
       data["offered_price"] = extractedPrice;
     }
-    data["price"] = [];
+    data["price"] = "";
     let prodmPrice = document.querySelector(
       ".priceBlockStrikePriceString.a-text-strike"
     );
@@ -274,19 +277,14 @@ const AMAZON = {
     data["retailer"] = "amazon";
 
     // Brand
-    data["brand"] = document
+    data["brand_name"] = document
       ?.querySelector("#bylineInfo")
       ?.innerText?.replace(/[Bb]rand:?\s?/, "")
       ?.replace(/Visit the\s?/, "")
       ?.replace(/\s?[Ss]tore/, "");
 
     // Check if prime
-    let prime = document
-      .querySelector(
-        "._multi-card-creative-desktop_DesktopGridColumn_gridColumn__2Jfab > div > a"
-      )
-      ?.getAttribute("aria-label")
-      ?.includes("Eligible for Prime");
+    let prime = document.querySelector("#prime_feature_div");
     if (prime) {
       data["prime"] = true;
     } else {
@@ -349,14 +347,23 @@ const AMAZON = {
         ?.filter((item) => item?.innerText?.includes("Package Dimensions"))?.[0]
         ?.querySelector("span:nth-child(2)")
         ?.innerText?.split(";");
+      const dimensions = measurementArray?.[0];
+      const weightObj = measurementArray?.[1];
 
-      const [dimensions, weightObj] = measurementArray;
       const dimensionUnit = dimensions?.match(/[a-zA-Z]{2,}/)?.[0];
-      const [length, width, depth] = dimensions
-        ?.replace(/\s?[a-zA-Z]{2,}/, "")
-        ?.split(" x ");
+      const dimData = dimensions?.replace(/\s?[a-zA-Z]{2,}/, "")?.split(" x ");
+      const length = dimData?.[0];
+      const width = dimData?.[1];
+      const depth = dimData?.[2];
+
       const weight = weightObj?.match(/[0-9.]+/)?.[0];
       const weightUnit = weightObj?.match(/[a-zA-Z]+/)?.[0];
+      data["length"] = length;
+      data["width"] = width;
+      data["height"] = depth;
+      data["weight"] = weight;
+      data["dimensionUnit"] = dimensionUnit;
+      data["weightUnit"] = weightUnit;
       data["package_dimensions"] = packageDimensions(
         length,
         width,
@@ -365,12 +372,31 @@ const AMAZON = {
         dimensionUnit,
         weightUnit
       );
+      data["specs"] = {};
+      Array.from(document.querySelectorAll("#twister .a-row"))?.forEach(
+        (item) => {
+          let label = item
+            ?.querySelector("label")
+            ?.innerText?.replace(/:\s?/, "");
+          let value = item?.querySelector("span")?.innerText;
+          data["specs"][label] = value;
+          return true;
+        }
+      );
+      Array.from(document.querySelectorAll("#poExpander tbody tr"))?.forEach(
+        (item) => {
+          let label = item?.querySelector("td:nth-child(1) span")?.innerText;
+          let value = item?.querySelector("td:nth-child(2) span")?.innerText;
+          data["specs"][label] = value;
+          return true;
+        }
+      );
     }
     return data;
   },
 };
 module.exports = AMAZON;
 
-// AMAZON.firstOne("B0942VQ1JR");
+// AMAZON.firstOne("B08ZT2R441");
 // AMAZON.firstOne("B07T3P4ZB4");
 // AMAZON.firstOne("B085T3PGGR");
