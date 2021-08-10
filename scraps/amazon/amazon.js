@@ -54,7 +54,20 @@ const AMAZON = {
   },
   extractData() {
     let out = [];
-    let brands = Array.from(document.querySelectorAll("[aria-labelledby=p_89-title] > li")).map(item=>item.getAttribute('aria-label')).filter(item=>item)
+    let brands = Array.from(
+      document.querySelectorAll("[aria-labelledby=p_89-title] > li")
+    )
+      .map((item) => item.getAttribute("aria-label"))
+      .filter((item) => item);
+    let departments = Array.from(
+      document.querySelectorAll("#departments> ul li a span")
+    )?.map((item) => item?.innerText);
+    let reviews = Array.from(
+      document.querySelectorAll("#reviewsRefinements> ul li i span ")
+    )?.map((item) => item?.innerText);
+    let priceFilter = Array.from(
+      document.querySelectorAll("#priceRefinements> ul li a span")
+    )?.map((item) => item?.innerText);
     Array.from(
       document.querySelectorAll("[data-component-type=s-search-result]")
     ).forEach((item) => {
@@ -65,9 +78,11 @@ const AMAZON = {
       let price = item.querySelector(".a-price span.a-offscreen")?.innerText;
       let link = item.querySelector(
         "a-size-base.a-link-normal.a-text-normal"
-      )?.innerText;       
+      )?.innerText;
       let sku = item.getAttribute("data-asin");
-      let isPrime = item.innerText.includes("Eligible for Prime") ? true : false
+      let isPrime = item.innerText.includes("Eligible for Prime")
+        ? true
+        : false;
       let ob = {
         image: imag,
         title,
@@ -76,25 +91,28 @@ const AMAZON = {
         num_reviews: totalRating,
         link,
         asin: sku,
-        prime:isPrime,
-        
+        prime: isPrime,
       };
-      
+
       out.push(ob);
       ob = {};
     });
     out = out.filter((item) => item.image && item.title && item.price);
     let results = {
-      brands,
-      results : out
-    }
+      filters: {
+        brands,
+        price: priceFilter,
+        reviews,
+        departments,
+      },
+      results: out,
+    };
     return results;
   },
 
-    // let allBrands = Array.from(
-    //   document.querySelectorAll("[aria-labelledby=p_89-title] > li")
-    // ).forEach((item) => {brands.getAttribute("aria-label")});
-  
+  // let allBrands = Array.from(
+  //   document.querySelectorAll("[aria-labelledby=p_89-title] > li")
+  // ).forEach((item) => {brands.getAttribute("aria-label")});
 };
 module.exports = AMAZON;
 

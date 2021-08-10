@@ -371,6 +371,6 @@ const AMAZON = {
 };
 module.exports = AMAZON;
 
-AMAZON.firstOne("B0942VQ1JR");
+// AMAZON.firstOne("B0942VQ1JR");
 // AMAZON.firstOne("B07T3P4ZB4");
 // AMAZON.firstOne("B085T3PGGR");
