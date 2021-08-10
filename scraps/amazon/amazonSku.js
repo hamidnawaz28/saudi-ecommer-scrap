@@ -9,13 +9,13 @@ puppeteer.use(pluginStealth());
 const sleep = (duration) =>
   new Promise((resolve) => setTimeout(resolve, duration));
 const msleep = 2000; // sleeping time
-
 const AMAZON = {
-  async firstOne(sku) {
+  async firstOne(asin) {
     let browser = "";
     try {
       browser = await puppeteer.launch({
         headless: true,
+        devtools: false,
         args: [
           "--no-sandbox",
           "--disable-setuid-sandbox",
@@ -37,7 +37,7 @@ const AMAZON = {
         timeout: 0,
       });
 
-      await page.type("#twotabsearchtextbox", sku, { delay: 1 });
+      await page.type("#twotabsearchtextbox", asin, { delay: 1 });
       await page.keyboard.press("Enter");
       await page.waitForSelector(".a-link-normal.a-text-normal", {
         timeout: 5000000,
@@ -60,9 +60,10 @@ const AMAZON = {
           let varients = [];
           try {
             let imagesData = await page.evaluate(this.getImagesData);
-            images = getJson(imagesData)?.colorImages[
-              "Pink Team Gold Black 700"
-            ]?.map((item) => item?.large);
+            let color = await page.evaluate(this.getColor);
+            images = getJson(imagesData)?.colorImages[color]?.map(
+              (item) => item?.large
+            );
           } catch {
             images = [];
           }
@@ -70,7 +71,7 @@ const AMAZON = {
           try {
             let varientsData = await page.evaluate(this.getVarientsData);
             let varientsDataObj =
-              JSON.parse(varientsData).dimensionValuesDisplayData;
+              dJSON.parse(varientsData).dimensionValuesDisplayData;
             varients = Object.keys(varientsDataObj)?.map((item) => {
               return {
                 product_id: item,
@@ -83,7 +84,12 @@ const AMAZON = {
           } catch {
             varients = [];
           }
-          let product = await page.evaluate(this.extractData, images, varients);
+          let product = await page.evaluate(
+            this.extractData,
+            images,
+            varients,
+            asin
+          );
           console.log("extracted data=== ", product);
           if (product) {
             await browser.close();
@@ -103,8 +109,14 @@ const AMAZON = {
     }
     return "done";
   },
+  getColor() {
+    let colorObj = document.querySelector("#variation_color_name .selection");
+    if (colorObj) {
+      return colorObj.innerText;
+    }
+  },
   getImagesData() {
-    var s = Array.from(document?.querySelectorAll("[type]")).filter((item) =>
+    var s = Array.from(document?.querySelectorAll("[type]"))?.filter((item) =>
       item?.innerText?.includes("ImageBlockBTF")
     )?.[0]?.innerText;
     let ob = s
@@ -116,7 +128,7 @@ const AMAZON = {
     return ob;
   },
   getVarientsData() {
-    var s = Array.from(document?.querySelectorAll("[type]")).filter((item) =>
+    var s = Array.from(document?.querySelectorAll("[type]"))?.filter((item) =>
       item?.innerText?.includes("twister-js-init-dpx-data")
     )?.[0]?.innerText;
     let ob = s
@@ -130,33 +142,50 @@ const AMAZON = {
   findItemBySku() {
     let firstItem = document.querySelector(".a-link-normal.a-text-normal");
     if (firstItem) {
-      return firstItem.href;
+      return firstItem?.href;
     }
     return false;
   },
 
-  extractData(images, varients) {
+  extractData(images, varients, asin) {
     var data = {};
     data["images"] = images;
     data["all_variants"] = varients;
-    var s = Array.from(document?.querySelectorAll("[type]")).filter((item) =>
-      item?.innerText?.includes("ImageBlockBTF")
-    )?.[0];
+    data["asin"] = asin;
     // Extract Brand
     let productBrand = document.querySelector("#detailBullets_feature_div");
     if (productBrand) {
-      data["brand_name"] = productBrand.innerText
-        .split("Manufacturer")[1]
-        .replace("\n", ":")
-        .split(":")[1]
-        .replace(/[" " ]+/g, "");
+      data["brand_name"] = productBrand?.innerText
+        ?.split("Manufacturer")[1]
+        ?.replace("\n", ":")
+        ?.split(":")[1]
+        ?.replace(/[" " ]+/g, "");
     }
 
     // Extract title
     let productTitle = document.querySelector("#productTitle");
     if (productTitle) {
-      data["title"] = productTitle.innerText.trim();
+      data["title"] = productTitle?.innerText?.trim();
     }
+
+    // Selected Color
+    let colorObj = document.querySelector("#variation_color_name .selection");
+    if (colorObj) {
+      data["color"] = colorObj.innerText;
+    }
+
+    // Selected size
+    let sizeObj = document.querySelector(
+      "#dropdown_selected_size_name .a-dropdown-prompt"
+    );
+    if (sizeObj) {
+      data["size"] = sizeObj.innerText;
+    }
+
+    // Varient specific
+    data[
+      "variant_specifics"
+    ] = `Size: ${data["size"]}, Color: ${data["color"]}`;
 
     //Extract Category
     let prodCategory = Array.from(
@@ -164,8 +193,8 @@ const AMAZON = {
     );
     if (prodCategory) {
       data["categories"] = prodCategory
-        .map((item) => item.innerText)
-        .filter((item) => item != "›");
+        ?.map((item) => item?.innerText)
+        ?.filter((item) => item != "›");
     }
 
     // Extract description
@@ -173,56 +202,57 @@ const AMAZON = {
     let productDescription = document.querySelector("#productDescription >p");
     if (productDescription) {
       try {
-        data["description"] = productDescription.innerText.trim();
+        data["description"] = productDescription?.innerText?.trim();
       } catch {
         data["description"] = "";
       }
     }
 
     // Extract Product images
-    data["main_image"] = document
-      .querySelector("[data-action=main-image-click] img")
-      ?.getAttribute("src");
-
+    data["main_image"] = "";
+    let mainImgObj = document.querySelector("#imgTagWrapperId img");
+    if (mainImgObj) {
+      data["main_image"] = mainImgObj?.src;
+    }
     // data["all_images"]=''
     // let AllImg =
 
     // Extract Product Sizes Available
-    data["availSizes"] = [];
-    let productSize = document.querySelectorAll(
+    data["sizes"] = [];
+    let productSizeObj = document.querySelectorAll(
       ".a-dropdown-item.dropdownAvailable"
     );
-    if (productSize) {
-      data["availSizes"] = Array.from(productSize).map(
-        (item) => item.innerText
+    if (productSizeObj) {
+      data["sizes"] = Array.from(productSizeObj)?.map(
+        (item) => item?.innerText
       );
     }
 
     // Extract rating
     data["stars"] = [];
-    let prodRating = document.querySelector(".a-icon-alt");
-    if (prodRating) {
-      let rating = prodRating.innerText.replace(" out of 5 stars", "");
+    let prodRatingObj = document.querySelector(".a-icon-alt");
+    if (prodRatingObj) {
+      let rating = prodRatingObj?.innerText?.replace(" out of 5 stars", "");
       data["stars"] = rating;
     }
 
     // Extract price
-    data["offerPrice"] = [];
+    data["offered_price"] = [];
     let prodPrice = document.querySelector("#priceblock_ourprice");
     if (prodPrice) {
-      let extractedPrice = prodPrice.innerText;
-      data["offerPrice"] = extractedPrice;
+      let extractedPrice = prodPrice?.innerText;
+      data["offered_price"] = extractedPrice;
     }
-    data["mainPrice"] = [];
+    data["price"] = [];
     let prodmPrice = document.querySelector(
       ".priceBlockStrikePriceString.a-text-strike"
     );
     if (prodmPrice) {
       try {
-        let extractedPrice = prodmPrice.innerText;
-        data["mainPrice"] = extractedPrice;
+        let extractedPrice = prodmPrice?.innerText;
+        data["price"] = extractedPrice;
       } catch {
-        data["mainPrice"] = "";
+        data["price"] = "";
       }
     }
 
@@ -233,7 +263,7 @@ const AMAZON = {
     );
     if (prodColor) {
       try {
-        let extractedColor = prodColor.innerText;
+        let extractedColor = prodColor?.innerText;
         data["color"] = extractedColor;
       } catch {
         data["color"] = "";
@@ -241,12 +271,12 @@ const AMAZON = {
     }
 
     // Retailer
-    data["retailer"] = "Amazon";
+    data["retailer"] = "amazon";
 
     // Brand
     data["brand"] = document
       ?.querySelector("#bylineInfo")
-      ?.innerText.replace(/[Bb]rand:?\s?/, "")
+      ?.innerText?.replace(/[Bb]rand:?\s?/, "")
       ?.replace(/Visit the\s?/, "")
       ?.replace(/\s?[Ss]tore/, "");
 
@@ -256,7 +286,7 @@ const AMAZON = {
         "._multi-card-creative-desktop_DesktopGridColumn_gridColumn__2Jfab > div > a"
       )
       ?.getAttribute("aria-label")
-      .includes("Eligible for Prime");
+      ?.includes("Eligible for Prime");
     if (prime) {
       data["prime"] = true;
     } else {
@@ -268,7 +298,7 @@ const AMAZON = {
       document.querySelectorAll("#feature-bullets span ")
     );
     if (featureB) {
-      data["feature_bullets"] = featureB.map((item) => item.innerText);
+      data["feature_bullets"] = featureB?.map((item) => item?.innerText);
     }
 
     // Package Dimensions
@@ -281,26 +311,66 @@ const AMAZON = {
     } else {
       data["details"] = "";
     }
-
+    const packageDimensions = (
+      length,
+      width,
+      depth,
+      weight,
+      dimensionUnit,
+      weightUnit
+    ) => {
+      return {
+        size: {
+          width: {
+            amount: width,
+            unit: dimensionUnit,
+          },
+          depth: {
+            amount: depth,
+            unit: dimensionUnit,
+          },
+          length: {
+            amount: length,
+            unit: dimensionUnit,
+          },
+        },
+        weight: {
+          amount: weight,
+          unit: weightUnit,
+        },
+      };
+    };
     // Measurements
-    let measurementArray = Array.from(
-      document?.querySelectorAll("#detailBullets_feature_div li span")
-    )
-      ?.filter((item) => item?.innerText?.includes("Package Dimensions"))?.[0]
-      ?.querySelector("span:nth-child(2)")
-      ?.innerText.split(";");
-    const [dimensions, weight] = measurementArray;
-    data["dimensionUnit"] = dimensions.match(/[a-zA-Z]{2,}/)?.[0];
-    [data["length"], data["width"], data["height"]] = dimensions
-      ?.replace(/\s?[a-zA-Z]{2,}/, "")
-      ?.split(" x ");
-    data["weight"] = weight?.match(/[0-9.]+/)?.[0];
-    data["weightUnit"] = weight?.match(/[a-zA-Z]+/)?.[0];
+    let measurementsObject = document?.querySelectorAll(
+      "#detailBullets_feature_div li span"
+    );
+    if (measurementsObject) {
+      let measurementArray = Array.from(measurementsObject)
+        ?.filter((item) => item?.innerText?.includes("Package Dimensions"))?.[0]
+        ?.querySelector("span:nth-child(2)")
+        ?.innerText?.split(";");
 
+      const [dimensions, weightObj] = measurementArray;
+      const dimensionUnit = dimensions?.match(/[a-zA-Z]{2,}/)?.[0];
+      const [length, width, depth] = dimensions
+        ?.replace(/\s?[a-zA-Z]{2,}/, "")
+        ?.split(" x ");
+      const weight = weightObj?.match(/[0-9.]+/)?.[0];
+      const weightUnit = weightObj?.match(/[a-zA-Z]+/)?.[0];
+      data["package_dimensions"] = packageDimensions(
+        length,
+        width,
+        depth,
+        weight,
+        dimensionUnit,
+        weightUnit
+      );
+    }
     return data;
   },
 };
 module.exports = AMAZON;
 
+AMAZON.firstOne("B0942VQ1JR");
 // AMAZON.firstOne("B07T3P4ZB4");
 // AMAZON.firstOne("B085T3PGGR");
