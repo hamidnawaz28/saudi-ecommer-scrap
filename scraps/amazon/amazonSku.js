@@ -14,7 +14,7 @@ const AMAZON = {
     let browser = "";
     try {
       browser = await puppeteer.launch({
-        headless: true,
+        headless: false,
         devtools: false,
         args: [
           "--no-sandbox",
@@ -22,15 +22,28 @@ const AMAZON = {
           "--ignore-certificate-errors",
           "--disable-dev-shm-usage",
           "--lang=en-US;q=0.9,en",
+          "--start-maximized",
           randomUA.generate(),
           // "--user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36",
         ],
       });
       const page = await browser.newPage();
-      page.setViewport({
-        width: 1400,
-        height: 1050,
+      await page.setRequestInterception(true);
+      page.on("request", (req) => {
+        if (
+          req.resourceType() == "stylesheet" ||
+          req.resourceType() == "font" ||
+          req.resourceType() == "image"
+        ) {
+          req.abort();
+        } else {
+          req.continue();
+        }
       });
+      // page.setViewport({
+      //   width: 1400,
+      //   height: 1050,
+      // });
 
       await page.goto("https://www.amazon.com/", {
         waitUntil: "load",
@@ -397,6 +410,6 @@ const AMAZON = {
 };
 module.exports = AMAZON;
 
-// AMAZON.firstOne("B08ZT2R441");
+AMAZON.firstOne("B0971C8SZD");
 // AMAZON.firstOne("B07T3P4ZB4");
 // AMAZON.firstOne("B085T3PGGR");

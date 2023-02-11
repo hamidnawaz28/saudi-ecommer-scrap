@@ -5,7 +5,7 @@ const pluginStealth = require("puppeteer-extra-plugin-stealth");
 puppeteer.use(pluginStealth());
 
 const AMAZON = {
-  async firstOne(q) {
+  async search(q) {
     let queries = Object.keys(q)
       .map((item) => `&${item}=${q[item]}`.split(" ").join("+"))
       .join("");
@@ -116,4 +116,4 @@ const AMAZON = {
 };
 module.exports = AMAZON;
 
-// AMAZON.firstOne('shoe nike new', 'price-asc-rank', '25');
+// AMAZON.search('shoe nike new', 'price-asc-rank', '25');
